@@ -64,9 +64,6 @@ class UUT():
         except OSError: #沒辦法用if判斷檔案是否存在，所以只好這樣做了。
             print("Miss some files.")
             self.logdel()   #避免找不到檔案的時候，意外中斷，卻忘了刪掉之前的暫存檔。
-      
-
-
     def logdel(self):
         import os
         global logKP, logSW, logAPP, logOS_app, logOS_sys, logShot, logBSOD
@@ -76,29 +73,76 @@ class UUT():
                 os.system("del /Q "+dellist)
                 print("del ",dellist)
           
-    def getSW(self):
+    def getSW(self): #0417, new
         import os
-        global logKP, logSW, logAPP
-
-        print("getSystem info")
-        list_kp=["wmic computersystem get manufacturer, Model",
-                "wmic BIOS get Manufacturer,Name,SMBIOSBIOSVersion,Version",
-                "wmic OS get Caption,CSDVersion,OSArchitecture,Version",
-                "wmic CPU get Name,NumberOfCores,NumberOfLogicalProcessors, CurrentClockspeed",
-                "wmic MemoryChip get BankLabel,Manufacturer,Capacity,MemoryType,PartNumber,TypeDetail,Speed",
-                "wmic diskdrive get Model, description,Size",
-                "wmic path win32_portablebattery get deviceid,manufacturer,designcapacity,name",
-                "wmic path win32_videocontroller get Description",
-                "wmic path win32_videocontroller get CurrentHorizontalResolution,CurrentVerticalResolution,videomodedescription",
-                "wmic desktopmonitor get pnpdeviceid",
-                "wmic nic get ProductName"]
-                
-        #get key part list
-        for lists in list_kp:
-            os.system(lists+">>"+logKP)
-        #get sw driver list, refer by Heysong_Chang@Compal.com
-        os.system("wmic path win32_pnpsigneddriver get description,driverversion >"+logSW)
-        os.system("wmic product get name,version >"+logAPP) #spend for long time
+        global logKP, logSW, logAPP, SKU_ip, SKU_mac
+        import wmi
+        print("getSystem info")     
+        logKPstr=""
+        logSWstr=""
+        logKPstr=logKPstr+"IP = "+SKU_ip
+        logKPstr=logKPstr+"\nMAC = "+SKU_mac
+        c = wmi.WMI()
+        for sys in c.Win32_ComputerSystem():
+            logKPstr=logKPstr+"\n\nSystemSKUNumber = "+str(sys.SystemSKUNumber)
+        for sys in c.Win32_ComputerSystem():
+            logKPstr=logKPstr+"\nPC_Manufacturer = "+str(sys.manufacturer)
+            logKPstr=logKPstr+"\nPC_Model = "+str(sys.Model)
+        for sys in c.Win32_BaseBoard(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-baseboard
+            logKPstr=logKPstr+"\nBaseBoard_Version = "+str(sys.Version)
+        for sys in c.Win32_BIOS(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-bios
+            logKPstr=logKPstr+"\n\nBIOS_Manufacturer = "+str(sys.Manufacturer)
+            logKPstr=logKPstr+"\nSMBIOSBIOSVersion = "+str(sys.SMBIOSBIOSVersion)
+            logKPstr=logKPstr+"\nVersion = "+str(sys.Version)
+        for sys in c.Win32_OperatingSystem(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-operatingsystem
+            logKPstr=logKPstr+"\n\nOS_Caption = "+str(sys.Caption)
+            logKPstr=logKPstr+"\nOSArchitecture = "+str(sys.OSArchitecture)
+            logKPstr=logKPstr+"\nOS_Version = "+str(sys.Version)
+            logKPstr=logKPstr+"\nOS_BuildNumber = "+str(sys.BuildNumber)
+        for sys in c.Win32_Processor(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-processor
+            logKPstr=logKPstr+"\n\nCPU_Name = "+str(sys.Name)
+            logKPstr=logKPstr+"\nNumberOfCores = "+str(sys.NumberOfCores)
+            logKPstr=logKPstr+"\nNumberOfLogicalProcessors = "+str(sys.NumberOfLogicalProcessors)
+            logKPstr=logKPstr+"\nCurrentClockspeed = "+str(sys.CurrentClockspeed)
+        for sys in c.Win32_PhysicalMemory(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-physicalmemory
+            logKPstr=logKPstr+"\n\nRAM_Manufacturer = "+str(sys.Manufacturer)
+            logKPstr=logKPstr+"\nPartNumber = "+str(sys.PartNumber)
+            logKPstr=logKPstr+"\nSpeed = "+str(sys.Speed)
+            logKPstr=logKPstr+"\nCapacity = "+str(sys.Capacity)
+            logKPstr=logKPstr+"\nMemoryType = "+str(sys.MemoryType)
+            logKPstr=logKPstr+"\nTypeDetail = "+str(sys.TypeDetail)
+            logKPstr=logKPstr+"\nBankLabel = "+str(sys.BankLabel)
+        for sys in c.Win32_DiskDrive(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-diskdrive
+            logKPstr=logKPstr+"\n\nDisk_Model = "+str(sys.Model)
+            logKPstr=logKPstr+"\ndescription = "+str(sys.description)
+            logKPstr=logKPstr+"\nSize = "+str(sys.Size)
+        for sys in c.Win32_PortableBattery(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-portablebattery
+            logKPstr=logKPstr+"\n\nBattery_manufacturer = "+str(sys.manufacturer)
+            logKPstr=logKPstr+"\nname = "+str(sys.name)
+            logKPstr=logKPstr+"\ndeviceid = "+str(sys.deviceid)
+            logKPstr=logKPstr+"\ndesigncapacity = "+str(sys.designcapacity)
+        for sys in c.Win32_VideoController(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-videocontroller
+            logKPstr=logKPstr+"\n\nDescription = "+str(sys.Description)
+            logKPstr=logKPstr+"\nCurrentHorizontalResolution = "+str(sys.CurrentHorizontalResolution)
+            logKPstr=logKPstr+"\nCurrentVerticalResolution = "+str(sys.CurrentVerticalResolution)
+            logKPstr=logKPstr+"\nvideomodedescription = "+str(sys.videomodedescription)
+        for sys in c.Win32_DesktopMonitor(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-desktopmonitor
+            logKPstr=logKPstr+"\npnpdeviceid = "+str(sys.pnpdeviceid)+"\n"
+        for sys in c.Win32_NetworkAdapter(): #https://docs.microsoft.com/en-us/windows/desktop/cimwin32prov/win32-networkadapter
+            logKPstr=logKPstr+"\nProductName = "+str(sys.ProductName)
+        f=open(logKP,"w",encoding="utf-8") #w, a+, r, error for cp950 if without encoding utf8
+        f.write(logKPstr)
+        f.close()
+        for sys in c.Win32_PnPSignedDriver(): #https://msdn.microsoft.com/en-us/library/aa394354%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+            logSWstr=logSWstr+str(sys.description)+" "+str(sys.driverversion)+"\n" # for driver
+        for sys in c.Win32_Product(): #https://msdn.microsoft.com/en-us/library/aa394378(v=vs.85).aspx
+            logSWstr=logSWstr+"\n"+str(sys.name)+" "+str(sys.version) #for app
+        f=open(logSW,"w",encoding="utf-8") #w, a+, r
+        f.write(logSWstr)
+        f.close()
+        
+        
+        
     def mytime(self):
         import time
         mytime=time.strftime("%Y_%m_%d_%H_%M")
@@ -119,7 +163,6 @@ class UUT():
         server_log="\\\\192.168.0.1\\Logs" #your server path
         server_log2="\\\\192.168.0.1\\Logs"
         server_log3="\\\\192.168.0.11\\Logs"
-
         if os.path.exists(server_log):
             print("Logs Server found!!!")
             #print("copy /V /Y "+logzipfile+" "+server_log)
@@ -142,9 +185,7 @@ if __name__ == "__main__":  # Start from here
     SKU = socket.gethostbyname(socket.getfqdn()).replace(".","-")
     logOS_sys = "Logs_sys_"+mytime+".evtx"
     logOS_app = "Logs_app_"+mytime+".evtx"
-    
     os.system('mode con: cols=80 lines=10')
-
     #if sys.argv[1] is not None and sys.argv[2] is not None and sys.argv[3] is not None:
     if len(sys.argv)>1: #To fix list index out of range
         sku_no=sys.argv[1]
@@ -155,11 +196,9 @@ if __name__ == "__main__":  # Start from here
         test_item=input("\ninput test item and symptom (ex:WB_BSNBLNCL): ") #2
         accept_upload=str(input("\nAccept to upload log to server?(Y/n)") or "Y") #3
     logzipfile= SKU+"_"+sku_no+"_"+"Logs_"+test_item+"_"+mytime+".zip"
-
     #print("cwd: ",os.getcwd())
     os.chdir(os.environ['USERPROFILE']+"\\Desktop") #Change the current working directory to Desktop
     #print("cwd: ",os.getcwd())
-
     uut=UUT() #create menu from Class UUT
     if uut.is_admin(): #check admin or not
         # Code of your program here
@@ -175,8 +214,6 @@ if __name__ == "__main__":  # Start from here
             print("Log no upload to server")
         #print(os.getenv("SystemRoot"))
         #uut.mytime()
-        
-
     else:
         # Re-run the program with admin rights
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, "", None, 1) #for py 3
@@ -184,8 +221,6 @@ if __name__ == "__main__":  # Start from here
         print ("Not admin")
         uut.cmd("timeout /t 10")
     
-
-
 
 #add %userprofile%\Pictures\Screenshots\Screenshot (1).png
 #IP instead of UUT
